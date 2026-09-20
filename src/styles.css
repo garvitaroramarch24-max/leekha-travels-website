@@ -1,0 +1,641 @@
+/* ============================================================================
+   GLOBAL STYLES & ANIMATIONS
+   ============================================================================ */
+
+:root {
+  --primary: #0f172a;
+  --secondary: #1e293b;
+  --accent: #06b6d4;
+  --accent-alt: #3b82f6;
+  --glow: rgba(6, 182, 212, 0.5);
+}
+
+
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #0f172a 100%);
+  color: #e0f2fe;
+  overflow-x: hidden;
+}
+
+/* ============================================================================
+   SNOWFLAKE ANIMATION
+   ============================================================================ */
+
+.snowfall-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+  overflow: hidden;
+}
+
+.snowflake {
+  position: absolute;
+  top: -10px;
+  font-size: 1.5em;
+  font-weight: 700;
+  text-shadow: 0 0 10px rgba(6, 182, 212, 0.8);
+  animation: snowfall linear infinite;
+  z-index: 1;
+}
+
+@keyframes snowfall {
+  0% {
+    top: -10px;
+    transform: translateX(0) rotateZ(0deg);
+    opacity: 1;
+  }
+  50% {
+    transform: translateX(100px) rotateZ(180deg);
+  }
+  100% {
+    top: 100vh;
+    transform: translateX(0) rotateZ(360deg);
+    opacity: 0;
+  }
+}
+
+/* ============================================================================
+   WAVE ANIMATION
+   ============================================================================ */
+
+.waves {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: auto;
+  z-index: 5;
+}
+
+.wave {
+  animation: wave 8s linear infinite;
+  transform-origin: 0 50%;
+}
+
+.wave1 {
+  animation: wave 8s linear infinite;
+}
+
+.wave2 {
+  animation: wave 10s linear infinite reverse;
+}
+
+.wave3 {
+  animation: wave 12s linear infinite;
+}
+
+@keyframes wave {
+  0% {
+    d: path('M0,50 Q300,0 600,50 T1200,50 L1200,120 L0,120 Z');
+  }
+  50% {
+    d: path('M0,30 Q300,-20 600,30 T1200,30 L1200,120 L0,120 Z');
+  }
+  100% {
+    d: path('M0,50 Q300,0 600,50 T1200,50 L1200,120 L0,120 Z');
+  }
+}
+
+/* ============================================================================
+   SMOOTH TRANSITIONS & FADE-INS
+   ============================================================================ */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shimmer {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes glow {
+  0%, 100% {
+    text-shadow: 0 0 10px rgba(6, 182, 212, 0.5), 0 0 20px rgba(59, 130, 246, 0.3);
+  }
+  50% {
+    text-shadow: 0 0 20px rgba(6, 182, 212, 0.8), 0 0 40px rgba(59, 130, 246, 0.5);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(6, 182, 212, 0.3), inset 0 0 20px rgba(6, 182, 212, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(6, 182, 212, 0.6), inset 0 0 30px rgba(6, 182, 212, 0.2);
+  }
+}
+
+/* ============================================================================
+   UTILITY CLASSES
+   ============================================================================ */
+
+.animate-fadeIn {
+  animation: fadeIn 0.8s ease-out forwards;
+}
+
+.animate-slideUp {
+  animation: slideUp 0.6s ease-out forwards;
+  opacity: 0;
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, rgba(6, 182, 212, 0.1), rgba(59, 130, 246, 0.2), rgba(6, 182, 212, 0.1));
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
+.animate-glow {
+  animation: glow 2s ease-in-out infinite;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* ============================================================================
+   SMOOTH SCROLLBAR
+   ============================================================================ */
+
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.8);
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, #06b6d4, #3b82f6);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(to bottom, #00d9ff, #60a5fa);
+}
+
+/* ============================================================================
+   INPUT & FORM STYLING
+   ============================================================================ */
+
+input, textarea, select {
+  transition: all 0.3s ease;
+}
+
+input:focus, textarea:focus, select:focus {
+  box-shadow: 0 0 20px rgba(6, 182, 212, 0.4), inset 0 0 10px rgba(6, 182, 212, 0.1);
+}
+
+input::placeholder, textarea::placeholder {
+  color: rgba(147, 197, 253, 0.5);
+}
+
+/* ============================================================================
+   SLIDER STYLING
+   ============================================================================ */
+
+.slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #06b6d4, #3b82f6);
+  cursor: pointer;
+  box-shadow: 0 0 15px rgba(6, 182, 212, 0.6);
+  border: 2px solid rgba(6, 182, 212, 0.8);
+  transition: all 0.2s ease;
+}
+
+.slider::-webkit-slider-thumb:hover {
+  transform: scale(1.3);
+  box-shadow: 0 0 25px rgba(6, 182, 212, 1);
+}
+
+.slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #06b6d4, #3b82f6);
+  cursor: pointer;
+  box-shadow: 0 0 15px rgba(6, 182, 212, 0.6);
+  border: 2px solid rgba(6, 182, 212, 0.8);
+  transition: all 0.2s ease;
+}
+
+.slider::-moz-range-thumb:hover {
+  transform: scale(1.3);
+  box-shadow: 0 0 25px rgba(6, 182, 212, 1);
+}
+
+/* ============================================================================
+   BUTTON HOVER EFFECTS
+   ============================================================================ */
+
+button {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+button:hover {
+  transform: translateY(-2px);
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+/* ============================================================================
+   CARD HOVER EFFECTS
+   ============================================================================ */
+
+.group {
+  position: relative;
+}
+
+.group::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 2px;
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.3), rgba(59, 130, 246, 0.3));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.group:hover::before {
+  opacity: 1;
+}
+
+/* ============================================================================
+   RESPONSIVE DESIGN
+   ============================================================================ */
+
+@media (max-width: 768px) {
+  .snowflake {
+    font-size: 1.2em;
+  }
+
+  .animate-slideUp {
+    animation-delay: 0 !important;
+  }
+
+  .waves {
+    height: 60px;
+  }
+
+  h1 {
+    font-size: 1.5rem !important;
+  }
+
+  h2 {
+    font-size: 1.875rem !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .snowfall-container {
+    display: none;
+  }
+
+  .snowflake {
+    display: none;
+  }
+
+  .grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  h2 {
+    font-size: 1.5rem !important;
+  }
+
+  button {
+    padding: 0.75rem !important;
+  }
+}
+
+/* ============================================================================
+   TEXT GRADIENT ANIMATIONS
+   ============================================================================ */
+
+.bg-clip-text {
+  background-attachment: fixed;
+  animation: shimmer 3s infinite;
+}
+
+/* ============================================================================
+   BACKDROP BLUR & GLASS MORPHISM
+   ============================================================================ */
+
+.backdrop-blur-xl {
+  backdrop-filter: blur(20px) saturate(180%);
+  background-color: rgba(15, 23, 42, 0.5);
+}
+
+.backdrop-blur-2xl {
+  backdrop-filter: blur(40px) saturate(180%);
+  background-color: rgba(15, 23, 42, 0.4);
+}
+
+.backdrop-blur-sm {
+  backdrop-filter: blur(5px);
+}
+
+/* ============================================================================
+   SHADOW EFFECTS
+   ============================================================================ */
+
+.shadow-glow {
+  box-shadow: 0 0 30px rgba(6, 182, 212, 0.3), 
+              0 0 60px rgba(59, 130, 246, 0.2),
+              inset 0 0 20px rgba(6, 182, 212, 0.1);
+}
+
+.shadow-glow-sm {
+  box-shadow: 0 0 15px rgba(6, 182, 212, 0.25);
+}
+
+/* ============================================================================
+   BORDER ANIMATIONS
+   ============================================================================ */
+
+@keyframes borderFlow {
+  0% {
+    border-color: rgba(6, 182, 212, 0.3);
+  }
+  50% {
+    border-color: rgba(59, 130, 246, 0.6);
+  }
+  100% {
+    border-color: rgba(6, 182, 212, 0.3);
+  }
+}
+
+.border-animated {
+  animation: borderFlow 2s ease-in-out infinite;
+}
+
+/* ============================================================================
+   TRANSFORM EFFECTS
+   ============================================================================ */
+
+.transform-gpu {
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+/* ============================================================================
+   ANIMATION DELAYS FOR STAGGERED EFFECTS
+   ============================================================================ */
+
+/* @for $i from 1 through 10 {
+  .animate-slideUp:nth-child(#{$i}) {
+    animation-delay: #{$i * 100}ms;
+  }
+} */
+ /* ============================================================================
+   ANIMATION DELAYS FOR STAGGERED EFFECTS
+   ============================================================================ */
+
+.animate-slideUp:nth-child(1) { animation-delay: 0ms; }
+.animate-slideUp:nth-child(2) { animation-delay: 100ms; }
+.animate-slideUp:nth-child(3) { animation-delay: 200ms; }
+.animate-slideUp:nth-child(4) { animation-delay: 300ms; }
+.animate-slideUp:nth-child(5) { animation-delay: 400ms; }
+.animate-slideUp:nth-child(6) { animation-delay: 500ms; }
+.animate-slideUp:nth-child(7) { animation-delay: 600ms; }
+.animate-slideUp:nth-child(8) { animation-delay: 700ms; }
+.animate-slideUp:nth-child(9) { animation-delay: 800ms; }
+.animate-slideUp:nth-child(10) { animation-delay: 900ms; }
+
+/* ============================================================================
+   DARK MODE SCROLLBAR (Already applied globally)
+   ============================================================================ */
+
+@media (prefers-color-scheme: dark) {
+  ::-webkit-scrollbar {
+    width: 12px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: rgba(15, 23, 42, 0.9);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: linear-gradient(to bottom, #06b6d4, #0ea5e9);
+    border-radius: 10px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(to bottom, #22d3ee, #38bdf8);
+  }
+}
+
+/* ============================================================================
+   LOADING ANIMATION
+   ============================================================================ */
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* ============================================================================
+   BOUNCE ANIMATION VARIANTS
+   ============================================================================ */
+
+@keyframes bounce-alt {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+.animate-bounce-alt {
+  animation: bounce-alt 1s infinite;
+}
+
+/* ============================================================================
+   SPECIAL HOVER STATES FOR INTERACTIVE ELEMENTS
+   ============================================================================ */
+
+a, button {
+  position: relative;
+}
+
+a::after, button::after {
+  content: '';
+  position: absolute;
+  bottom: -3px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #06b6d4, #3b82f6);
+  transition: width 0.3s ease;
+}
+
+a:hover::after, button:hover::after {
+  width: 100%;
+}
+
+/* ============================================================================
+   CARD ENTRANCE ANIMATIONS
+   ============================================================================ */
+
+@keyframes cardEntrance {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.card-entrance {
+  animation: cardEntrance 0.5s ease-out;
+}
+
+/* ============================================================================
+   GRADIENT TEXT ANIMATION
+   ============================================================================ */
+
+@keyframes gradientShift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.gradient-text-animate {
+  background: linear-gradient(270deg, #06b6d4, #3b82f6, #8b5cf6, #06b6d4);
+  background-size: 300% 300%;
+  animation: gradientShift 5s ease infinite;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ============================================================================
+   CUSTOM SCROLLBAR FOR ADMIN PANEL
+   ============================================================================ */
+
+.max-h-96 {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(6, 182, 212, 0.6) rgba(15, 23, 42, 0.8);
+}
+
+/* ============================================================================
+   FOCUS RING CUSTOM STYLING
+   ============================================================================ */
+
+*:focus-visible {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.9), 0 0 0 4px rgba(6, 182, 212, 0.8);
+}
+
+/* ============================================================================
+   SMOOTH PAGE TRANSITIONS
+   ============================================================================ */
+
+@keyframes pageEnter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+body {
+  animation: pageEnter 0.5s ease-out;
+}
+
+/* ============================================================================
+   MOBILE OPTIMIZATIONS
+   ============================================================================ */
+
+@media (max-width: 640px) {
+  .snowflake {
+    font-size: 1em;
+    opacity: 0.4;
+  }
+
+  .waves {
+    height: 50px;
+  }
+
+  button {
+    font-size: 0.875rem;
+    padding: 0.75rem 1rem;
+  }
+
+  input, textarea, select {
+    font-size: 16px; /* Prevents iOS zoom on input */
+  }
+}
