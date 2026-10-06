@@ -1,4 +1,3 @@
-import React from 'react';
 import TravelAppAnimated from './TravelAppAnimated';
 // import './styles.css';
 

@@ -1,6 +1,7 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { apiRequest } from './api';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import {
   Navigation,
@@ -18,108 +19,6 @@ import 'swiper/css/effect-fade';
 // ============================================================================
 // CONSTANTS & DATA
 // ============================================================================
-
-// Put your photos in: public/images/  (see file names below).
-// If a photo is missing, the emoji fallback is shown instead, so nothing breaks.
-const INITIAL_PACKAGES = [
-  {
-    id: 1,
-    name: 'Shimla Family Getaway',
-    budget: 8500,
-    days: '4 Days / 3 Nights',
-    highlights: 'The Ridge, Mall Road, Kufri sightseeing, Comfort Family Stay',
-    type: 'Hill Station',
-    image: '🏔️',
-    img: '/images/shimla.jpg',
-    rating: 4.8,
-    reviews: 234,
-  },
-  {
-    id: 2,
-    name: 'Goa Beach Celebration',
-    budget: 22000,
-    days: '6 Days / 5 Nights',
-    highlights: 'Flights from Delhi, Calangute Beach, South Goa Heritage Tour',
-    type: 'Premium Beach',
-    image: '🏖️',
-    img: '/images/goa.jpg',
-    rating: 4.9,
-    reviews: 567,
-  },
-  {
-    id: 3,
-    name: 'Kasauli Weekend Escape',
-    budget: 4500,
-    days: '2 Days / 1 Night',
-    highlights: 'Gilbert Trail, Sunset Point, Heritage Markets tour',
-    type: 'Hill Station',
-    image: '⛰️',
-    img: '/images/kasauli.jpg',
-    rating: 4.7,
-    reviews: 189,
-  },
-  {
-    id: 4,
-    name: 'Haripurdhar Hill Expedition',
-    budget: 5500,
-    days: '3 Days / 2 Nights',
-    highlights: 'Mata Bhangayani Temple tour, Hidden green valleys trek',
-    type: 'Spiritual / Hill',
-    image: '🙏',
-    img: '/images/haripurdhar.jpg',
-    rating: 4.6,
-    reviews: 145,
-  },
-  {
-    id: 5,
-    name: 'Jamtah Mountain Retreat',
-    budget: 3500,
-    days: '2 Days / 1 Night',
-    highlights: 'Peaceful views, Renuka Lake nearby, Pine Forests walk',
-    type: 'Nature Relax',
-    image: '🌲',
-    img: '/images/jamtah.jpg',
-    rating: 4.5,
-    reviews: 98,
-  },
-  {
-    id: 6,
-    name: 'Nainital Lake Experience',
-    budget: 9500,
-    days: '4 Days / 3 Nights',
-    highlights: 'Naini Lake Boating, Bhimtal, Mall Road evening strolls',
-    type: 'Lake City',
-    image: '🏞️',
-    img: '/images/nainital.jpg',
-    rating: 4.8,
-    reviews: 412,
-  },
-];
-
-// Hero slides. "pkg" must match a package name exactly (it pre-fills the inquiry form).
-const HERO_SLIDES = [
-  {
-    img: '/images/shimla.jpg',
-    place: 'Shimla',
-    tagline: 'The Queen of Hills',
-    desc: 'Evening walks on The Ridge, colonial charm and cool mountain air.',
-    pkg: 'Shimla Family Getaway',
-  },
-  {
-    img: '/images/nainital.jpg',
-    place: 'Nainital',
-    tagline: 'City of Lakes',
-    desc: 'Boating on Naini Lake and slow evenings on Mall Road.',
-    pkg: 'Nainital Lake Experience',
-  },
-  {
-    img: '/images/kasauli.jpg',
-    place: 'Kasauli',
-    tagline: 'Your quick weekend escape',
-    desc: 'Pine forests, quiet trails and sunsets, just a short drive away.',
-    pkg: 'Kasauli Weekend Escape',
-  },
-];
 
 const PACKAGE_TYPES = [
   'Hill Station',
@@ -145,13 +44,6 @@ const FEATURES = [
   },
 ];
 
-// NOTE: credentials in front-end code are visible to anyone. This is fine for a
-// demo, but move login to a backend before you go live.
-const ADMIN_CREDENTIALS = {
-  email: 'leekhatravels@gmail.com',
-  password: 'admin123',
-};
-
 // Optional: put the agency's WhatsApp number here with country code, digits only
 // (example: '919876543210'). If set, the inquiry form also opens WhatsApp.
 const WHATSAPP_NUMBER = '';
@@ -160,21 +52,10 @@ const WHATSAPP_NUMBER = '';
 // Used by the Call button in the mobile contact bar.
 const PHONE_NUMBER = '';
 
-const STORAGE_KEY = 'leekha_packages_v1';
-
 const inr = (n) => '₹' + Number(n).toLocaleString('en-IN');
 
 const inputCls =
   'w-full rounded-xl bg-slate-950 border border-white/15 px-4 py-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/30 transition';
-
-function loadPackages() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : INITIAL_PACKAGES;
-  } catch {
-    return INITIAL_PACKAGES;
-  }
-}
 
 // ============================================================================
 // SMALL HELPERS
@@ -195,6 +76,10 @@ function SafeImage({ src, alt, className, fallback, eager = false }) {
   );
 }
 
+function getPackagePhoto(pkg) {
+  return pkg.img?.startsWith('/images/') ? '' : pkg.img;
+}
+
 function scrollToInquiry() {
   setTimeout(() => {
     document
@@ -208,29 +93,44 @@ function scrollToInquiry() {
 // ============================================================================
 
 export default function App() {
-  const [packages, setPackages] = useState(loadPackages);
+  const [packages, setPackages] = useState([]);
+  const [packagesLoading, setPackagesLoading] = useState(true);
+  const [packagesError, setPackagesError] = useState('');
 
-  // Keep admin changes after a page refresh (stored in this browser only).
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(packages));
-    } catch {
-      /* storage full or blocked: ignore */
-    }
-  }, [packages]);
+    apiRequest('/api/packages')
+      .then(setPackages)
+      .catch((error) => setPackagesError(error.message))
+      .finally(() => setPackagesLoading(false));
+  }, []);
 
-  const addPackage = (newPkg) => {
-    setPackages((prev) => [...prev, { id: Date.now(), ...newPkg }]);
+  const addPackage = async (newPkg) => {
+    const body = new FormData();
+    Object.entries(newPkg).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) body.append(key, value);
+    });
+    const created = await apiRequest('/api/packages', { method: 'POST', body });
+    setPackages((prev) => [...prev, created]);
   };
 
-  const deletePackage = (id) => {
+  const deletePackage = async (id) => {
+    await apiRequest(`/api/packages/${id}`, { method: 'DELETE' });
     setPackages((prev) => prev.filter((pkg) => pkg.id !== id));
   };
 
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<CustomerView packages={packages} />} />
+        <Route
+          path="/"
+          element={
+            <CustomerView
+              packages={packages}
+              packagesLoading={packagesLoading}
+              packagesError={packagesError}
+            />
+          }
+        />
         <Route
           path="/admin"
           element={
@@ -250,10 +150,22 @@ export default function App() {
 // CUSTOMER VIEW
 // ============================================================================
 
-function CustomerView({ packages }) {
+function CustomerView({ packages, packagesLoading, packagesError }) {
   const [search, setSearch] = useState('');
-  const [maxBudget, setMaxBudget] = useState(25000);
+  const [maxBudget, setMaxBudget] = useState(null);
   const [selectedPkg, setSelectedPkg] = useState('');
+  const budgetLimit = useMemo(
+    () =>
+      Math.max(
+        25000,
+        Math.ceil(
+          packages.reduce((highest, pkg) => Math.max(highest, Number(pkg.budget) || 0), 0) /
+            500
+        ) * 500
+      ),
+    [packages]
+  );
+  const selectedMaxBudget = maxBudget ?? budgetLimit;
 
   const filteredPackages = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -261,11 +173,12 @@ function CustomerView({ packages }) {
       const matchesSearch =
         !q ||
         pkg.name.toLowerCase().includes(q) ||
+        pkg.destination.toLowerCase().includes(q) ||
         pkg.type.toLowerCase().includes(q) ||
         pkg.highlights.toLowerCase().includes(q);
-      return matchesSearch && pkg.budget <= maxBudget;
+      return matchesSearch && pkg.budget <= selectedMaxBudget;
     });
-  }, [search, maxBudget, packages]);
+  }, [search, selectedMaxBudget, packages]);
 
   const handleSelect = (name) => {
     setSelectedPkg(name);
@@ -275,13 +188,24 @@ function CustomerView({ packages }) {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 overflow-x-hidden">
       <Header />
-      <HeroSection onSelectPackage={handleSelect} />
+      <HeroSection packages={packages} onSelectPackage={handleSelect} />
       <SearchFilters
         search={search}
         onSearchChange={setSearch}
-        maxBudget={maxBudget}
+        maxBudget={selectedMaxBudget}
+        budgetLimit={budgetLimit}
         onBudgetChange={setMaxBudget}
       />
+      {packagesError && (
+        <p role="alert" className="px-6 text-center text-red-300">
+          Could not load travel packages: {packagesError}
+        </p>
+      )}
+      {packagesLoading && (
+        <p role="status" className="px-6 text-center text-slate-400">
+          Loading travel packages...
+        </p>
+      )}
       <PackageCarousel
         filteredPackages={filteredPackages}
         onSelectPackage={handleSelect}
@@ -325,24 +249,43 @@ function Header() {
 // HERO CAROUSEL
 // ============================================================================
 
-function HeroSection({ onSelectPackage }) {
+function HeroSection({ packages, onSelectPackage }) {
+  if (packages.length === 0) {
+    return (
+      <section className="min-h-[480px] h-[75svh] bg-gradient-to-br from-blue-900 via-slate-900 to-slate-950 flex items-end">
+        <div className="max-w-7xl mx-auto w-full px-6 pb-16 sm:pb-24">
+          <p className="text-cyan-300 font-semibold mb-2">Leekha Travels</p>
+          <h2 className="text-5xl sm:text-7xl font-extrabold tracking-tight mb-4">
+            Find your next getaway
+          </h2>
+          <a
+            href="#packages"
+            className="inline-block px-7 py-3 rounded-full border border-white/40 hover:bg-white/10 text-white font-semibold transition"
+          >
+            View packages
+          </a>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="relative">
       <Swiper
         modules={[Autoplay, EffectFade, Pagination, Navigation]}
         effect="fade"
-        loop
+        loop={packages.length > 1}
         speed={1000}
-        autoplay={{ delay: 5500, disableOnInteraction: false }}
+        autoplay={packages.length > 1 ? { delay: 5500, disableOnInteraction: false } : false}
         pagination={{ clickable: true }}
         navigation
         className="h-[75svh] min-h-[480px]"
       >
-        {HERO_SLIDES.map((s, i) => (
-          <SwiperSlide key={s.place}>
+        {packages.map((pkg, i) => (
+          <SwiperSlide key={pkg.id}>
             <SafeImage
-              src={s.img}
-              alt={s.place}
+              src={getPackagePhoto(pkg)}
+              alt={pkg.destination}
               eager={i === 0}
               className="absolute inset-0 w-full h-full object-cover"
               fallback={
@@ -353,15 +296,17 @@ function HeroSection({ onSelectPackage }) {
             <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-slate-950/20" />
 
             <div className="relative z-10 h-full max-w-7xl mx-auto px-6 flex flex-col justify-end pb-16 sm:pb-24">
-              <p className="text-cyan-300 font-semibold mb-2">{s.tagline}</p>
+              <p className="text-cyan-300 font-semibold mb-2">{pkg.type}</p>
               <h2 className="text-5xl sm:text-7xl font-extrabold tracking-tight mb-4">
-                {s.place}
+                {pkg.destination}
               </h2>
-              <p className="text-slate-200 text-lg max-w-xl mb-8">{s.desc}</p>
+              <p className="text-slate-200 text-lg max-w-xl mb-8">
+                {pkg.highlights || `${pkg.days} · ${pkg.name}`}
+              </p>
 
               <div className="flex flex-wrap gap-3">
                 <button
-                  onClick={() => onSelectPackage(s.pkg)}
+                  onClick={() => onSelectPackage(pkg.name)}
                   className="px-7 py-3 rounded-full bg-orange-500 hover:bg-orange-400 text-white font-semibold shadow-lg shadow-orange-500/30 transition"
                 >
                   Inquire now
@@ -385,7 +330,7 @@ function HeroSection({ onSelectPackage }) {
 // SEARCH & FILTER
 // ============================================================================
 
-function SearchFilters({ search, onSearchChange, maxBudget, onBudgetChange }) {
+function SearchFilters({ search, onSearchChange, maxBudget, budgetLimit, onBudgetChange }) {
   return (
     <section className="px-6 -mt-10 relative z-20">
       <div className="max-w-6xl mx-auto bg-slate-900 border border-white/10 rounded-2xl shadow-2xl p-6 md:p-8 grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10">
@@ -422,7 +367,7 @@ function SearchFilters({ search, onSearchChange, maxBudget, onBudgetChange }) {
             id="budget"
             type="range"
             min="3000"
-            max="25000"
+            max={budgetLimit}
             step="500"
             value={maxBudget}
             onChange={(e) => onBudgetChange(Number(e.target.value))}
@@ -501,7 +446,7 @@ function PackageCard({ package: pkg, onInquire }) {
     <div className="h-full flex flex-col rounded-3xl overflow-hidden bg-slate-900 border border-white/10 shadow-xl">
       <div className="relative h-48 bg-slate-800">
         <SafeImage
-          src={pkg.img}
+          src={getPackagePhoto(pkg)}
           alt={pkg.name}
           className="w-full h-full object-cover"
           fallback={
@@ -519,6 +464,9 @@ function PackageCard({ package: pkg, onInquire }) {
       </div>
 
       <div className="p-6 flex flex-col flex-1">
+        <p className="text-xs font-semibold uppercase tracking-wide text-cyan-300 mb-2">
+          {pkg.destination}
+        </p>
         <p className="text-xs text-slate-400 mb-1">
           ⏱️ {pkg.days} · {pkg.reviews} reviews
         </p>
@@ -577,14 +525,13 @@ function InquiryForm({ selectedPkg, packages }) {
     destination: selectedPkg,
   });
   const [sent, setSent] = useState(false);
+  const [previousSelectedPkg, setPreviousSelectedPkg] = useState(selectedPkg);
 
-  // When someone clicks "Inquire" on a package, fill the destination.
-  useEffect(() => {
-    if (selectedPkg) {
-      setFormData((prev) => ({ ...prev, destination: selectedPkg }));
-      setSent(false);
-    }
-  }, [selectedPkg]);
+  if (selectedPkg && selectedPkg !== previousSelectedPkg) {
+    setPreviousSelectedPkg(selectedPkg);
+    setFormData((prev) => ({ ...prev, destination: selectedPkg }));
+    setSent(false);
+  }
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -783,17 +730,35 @@ function MobileContactBar() {
 
 function AdminPortal({ packages, onAdd, onDelete }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [checkingSession, setCheckingSession] = useState(() =>
+    Boolean(sessionStorage.getItem('leekha_admin_token'))
+  );
+
+  useEffect(() => {
+    if (!sessionStorage.getItem('leekha_admin_token')) return;
+    apiRequest('/api/auth/session')
+      .then(() => setIsAuthenticated(true))
+      .catch(() => sessionStorage.removeItem('leekha_admin_token'))
+      .finally(() => setCheckingSession(false));
+  }, []);
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
-      {!isAuthenticated ? (
+      {checkingSession ? (
+        <div className="min-h-screen flex items-center justify-center text-slate-400">
+          Checking admin session...
+        </div>
+      ) : !isAuthenticated ? (
         <LoginPage onLogin={() => setIsAuthenticated(true)} />
       ) : (
         <AdminDashboard
           packages={packages}
           onAdd={onAdd}
           onDelete={onDelete}
-          onLogout={() => setIsAuthenticated(false)}
+          onLogout={() => {
+            sessionStorage.removeItem('leekha_admin_token');
+            setIsAuthenticated(false);
+          }}
         />
       )}
     </div>
@@ -805,16 +770,18 @@ function LoginPage({ onLogin }) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    if (
-      email === ADMIN_CREDENTIALS.email &&
-      password === ADMIN_CREDENTIALS.password
-    ) {
+    try {
+      const result = await apiRequest('/api/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email, password }),
+      });
+      sessionStorage.setItem('leekha_admin_token', result.accessToken);
       onLogin();
-    } else {
-      setError('Wrong email or password. Please try again.');
+    } catch (loginError) {
+      setError(loginError.message);
     }
   };
 
@@ -904,32 +871,38 @@ function AdminDashboard({ packages, onAdd, onDelete, onLogout }) {
 function AddPackageForm({ onAdd }) {
   const emptyForm = {
     name: '',
+    destination: '',
     budget: '',
     days: '',
     highlights: '',
     type: 'Hill Station',
-    img: '',
+    photo: null,
   };
   const [formData, setFormData] = useState(emptyForm);
   const [message, setMessage] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [fileInputKey, setFileInputKey] = useState(0);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onAdd({
-      ...formData,
-      budget: Number(formData.budget),
-      image: '🧳',
-      rating: 4.5,
-      reviews: 0,
-    });
-    setFormData(emptyForm);
-    setMessage('Package published.');
-    setTimeout(() => setMessage(''), 3000);
+    setSubmitting(true);
+    setMessage('');
+    try {
+      await onAdd(formData);
+      setFormData(emptyForm);
+      setFileInputKey((key) => key + 1);
+      setMessage('Package published.');
+      setTimeout(() => setMessage(''), 3000);
+    } catch (error) {
+      setMessage(error.message);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -942,6 +915,15 @@ function AddPackageForm({ onAdd }) {
           value={formData.name}
           onChange={handleChange}
           placeholder="Package name"
+          required
+          className={inputCls}
+        />
+        <input
+          type="text"
+          name="destination"
+          value={formData.destination}
+          onChange={handleChange}
+          placeholder="Destination, e.g. Shimla or Mussoorie"
           required
           className={inputCls}
         />
@@ -976,14 +958,22 @@ function AddPackageForm({ onAdd }) {
             </option>
           ))}
         </select>
-        <input
-          type="text"
-          name="img"
-          value={formData.img}
-          onChange={handleChange}
-          placeholder="Photo path, e.g. /images/manali.jpg (optional)"
-          className={inputCls}
-        />
+        <label className="block text-sm text-slate-300">
+          Destination photo
+          <input
+            key={fileInputKey}
+            type="file"
+            name="photo"
+            accept="image/jpeg,image/png,image/webp"
+            onChange={(e) =>
+              setFormData((prev) => ({ ...prev, photo: e.target.files?.[0] ?? null }))
+            }
+            className="mt-2 block w-full text-sm text-slate-300 file:mr-4 file:rounded-lg file:border-0 file:bg-cyan-500 file:px-4 file:py-2 file:font-semibold file:text-slate-950 hover:file:bg-cyan-400"
+          />
+          <span className="mt-1 block text-xs text-slate-500">
+            JPEG, PNG or WebP, up to 8 MB
+          </span>
+        </label>
         <textarea
           name="highlights"
           value={formData.highlights}
@@ -994,12 +984,13 @@ function AddPackageForm({ onAdd }) {
         />
         <button
           type="submit"
+          disabled={submitting}
           className="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold transition"
         >
-          Publish package
+          {submitting ? 'Publishing...' : 'Publish package'}
         </button>
         {message && (
-          <p role="status" className="text-emerald-300 text-sm">
+          <p role="status" className={message === 'Package published.' ? 'text-emerald-300 text-sm' : 'text-red-300 text-sm'}>
             {message}
           </p>
         )}
@@ -1026,12 +1017,13 @@ function PackagesList({ packages, onDelete }) {
               <div className="flex-1 min-w-0">
                 <h3 className="font-bold truncate">{pkg.name}</h3>
                 <p className="text-xs text-slate-400 mt-1">
-                  {inr(pkg.budget)} · {pkg.days} · {pkg.type}
+                  {pkg.destination} · {inr(pkg.budget)} · {pkg.days} · {pkg.type}
                 </p>
               </div>
               <button
                 onClick={() =>
-                  window.confirm(`Delete "${pkg.name}"?`) && onDelete(pkg.id)
+                  window.confirm(`Delete "${pkg.name}"?`) &&
+                  onDelete(pkg.id).catch((error) => window.alert(error.message))
                 }
                 className="px-4 py-2.5 rounded-lg bg-red-500/15 hover:bg-red-500/30 text-red-300 text-xs font-semibold transition"
               >
