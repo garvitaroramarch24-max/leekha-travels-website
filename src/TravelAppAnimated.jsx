@@ -113,6 +113,15 @@ export default function App() {
     setPackages((prev) => [...prev, created]);
   };
 
+  const updatePackage = async (id, updates) => {
+    const body = new FormData();
+    Object.entries(updates).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) body.append(key, value);
+    });
+    const updated = await apiRequest(`/api/packages/${id}`, { method: 'PUT', body });
+    setPackages((prev) => prev.map((pkg) => (pkg.id === id ? updated : pkg)));
+  };
+
   const deletePackage = async (id) => {
     await apiRequest(`/api/packages/${id}`, { method: 'DELETE' });
     setPackages((prev) => prev.filter((pkg) => pkg.id !== id));
@@ -137,6 +146,7 @@ export default function App() {
             <AdminPortal
               packages={packages}
               onAdd={addPackage}
+              onUpdate={updatePackage}
               onDelete={deletePackage}
             />
           }
@@ -226,9 +236,10 @@ function Header() {
   return (
     <header className="sticky top-0 z-50 bg-slate-950/90 backdrop-blur border-b border-white/10">
       <div className="max-w-7xl mx-auto flex justify-between items-center px-6 py-4">
-        <Link to="/" className="leading-tight">
+        <Link to="/" className="leading-tight flex items-center gap-3">
+          <img src="/images/logo.png" alt="" className="h-10 w-10 object-contain" />
           <span className="block text-xl font-extrabold tracking-tight">
-            ✈️ Leekha Travels
+            Leekha Travels
           </span>
           <span className="block text-xs text-slate-400">
             Explore. Experience. Escape.
@@ -525,12 +536,15 @@ function InquiryForm({ selectedPkg, packages }) {
     destination: selectedPkg,
   });
   const [sent, setSent] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
   const [previousSelectedPkg, setPreviousSelectedPkg] = useState(selectedPkg);
 
   if (selectedPkg && selectedPkg !== previousSelectedPkg) {
     setPreviousSelectedPkg(selectedPkg);
     setFormData((prev) => ({ ...prev, destination: selectedPkg }));
     setSent(false);
+    setSubmitError('');
   }
 
   const handleChange = (e) => {
@@ -538,23 +552,23 @@ function InquiryForm({ selectedPkg, packages }) {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (WHATSAPP_NUMBER) {
-      const text = encodeURIComponent(
-        `Hi Leekha Travels, I'd like to plan a trip.\n` +
-          `Name: ${formData.name}\n` +
-          `Phone: ${formData.phone}\n` +
-          `Destination: ${formData.destination}\n` +
-          `Notes: ${formData.requests || '-'}`
-      );
-      window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${text}`, '_blank');
+    setSubmitting(true);
+    setSubmitError('');
+    setSent(false);
+    try {
+      await apiRequest('/api/inquiries', {
+        method: 'POST',
+        body: JSON.stringify(formData),
+      });
+      setSent(true);
+      setFormData(emptyForm);
+    } catch (error) {
+      setSubmitError(error.message);
+    } finally {
+      setSubmitting(false);
     }
-
-    // TODO: send formData to your backend / email service here.
-    setSent(true);
-    setFormData(emptyForm);
   };
 
   return (
@@ -572,8 +586,13 @@ function InquiryForm({ selectedPkg, packages }) {
             role="status"
             className="mb-6 rounded-xl bg-emerald-500/15 border border-emerald-400/40 text-emerald-300 px-4 py-3 text-sm"
           >
-            Request sent. We will contact you within 24 hours.
+            Request emailed successfully. We will contact you within 24 hours.
           </div>
+        )}
+        {submitError && (
+          <p role="alert" className="mb-6 rounded-xl bg-red-500/10 border border-red-400/30 text-red-300 px-4 py-3 text-sm">
+            {submitError}
+          </p>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-5">
@@ -664,9 +683,10 @@ function InquiryForm({ selectedPkg, packages }) {
 
           <button
             type="submit"
+            disabled={submitting}
             className="w-full py-3.5 rounded-xl bg-orange-500 hover:bg-orange-400 text-white font-bold text-lg shadow-lg shadow-orange-500/20 transition"
           >
-            Send request
+            {submitting ? 'Sending request...' : 'Send request'}
           </button>
         </form>
       </div>
@@ -728,7 +748,7 @@ function MobileContactBar() {
 // ADMIN PORTAL
 // ============================================================================
 
-function AdminPortal({ packages, onAdd, onDelete }) {
+function AdminPortal({ packages, onAdd, onUpdate, onDelete }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [checkingSession, setCheckingSession] = useState(() =>
     Boolean(sessionStorage.getItem('leekha_admin_token'))
@@ -754,6 +774,7 @@ function AdminPortal({ packages, onAdd, onDelete }) {
         <AdminDashboard
           packages={packages}
           onAdd={onAdd}
+          onUpdate={onUpdate}
           onDelete={onDelete}
           onLogout={() => {
             sessionStorage.removeItem('leekha_admin_token');
@@ -834,13 +855,18 @@ function LoginPage({ onLogin }) {
   );
 }
 
-function AdminDashboard({ packages, onAdd, onDelete, onLogout }) {
+function AdminDashboard({ packages, onAdd, onUpdate, onDelete, onLogout }) {
+  const [editingPackage, setEditingPackage] = useState(null);
+
   return (
     <div className="max-w-7xl mx-auto px-6 py-8">
       <header className="bg-slate-900 border border-white/10 rounded-2xl p-6 flex flex-wrap gap-4 justify-between items-center mb-8">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold">Admin dashboard</h1>
-          <p className="text-slate-400 text-sm mt-1">Manage tour packages</p>
+        <div className="flex items-center gap-4">
+          <img src="/images/logo.png" alt="" className="h-12 w-12 object-contain" />
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold">Admin dashboard</h1>
+            <p className="text-slate-400 text-sm mt-1">Manage tour packages</p>
+          </div>
         </div>
         <div className="flex gap-3">
           <Link
@@ -859,16 +885,26 @@ function AdminDashboard({ packages, onAdd, onDelete, onLogout }) {
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <AddPackageForm onAdd={onAdd} />
+        <AddPackageForm
+          key={editingPackage?.id ?? 'new-package'}
+          editingPackage={editingPackage}
+          onAdd={onAdd}
+          onUpdate={onUpdate}
+          onCancelEdit={() => setEditingPackage(null)}
+        />
         <div className="lg:col-span-2">
-          <PackagesList packages={packages} onDelete={onDelete} />
+          <PackagesList
+            packages={packages}
+            onDelete={onDelete}
+            onEdit={setEditingPackage}
+          />
         </div>
       </div>
     </div>
   );
 }
 
-function AddPackageForm({ onAdd }) {
+function AddPackageForm({ editingPackage, onAdd, onUpdate, onCancelEdit }) {
   const emptyForm = {
     name: '',
     destination: '',
@@ -878,7 +914,17 @@ function AddPackageForm({ onAdd }) {
     type: 'Hill Station',
     photo: null,
   };
-  const [formData, setFormData] = useState(emptyForm);
+  const [formData, setFormData] = useState(() => editingPackage
+    ? {
+      name: editingPackage.name,
+      destination: editingPackage.destination,
+      budget: String(editingPackage.budget),
+      days: editingPackage.days,
+      highlights: editingPackage.highlights ?? '',
+      type: editingPackage.type,
+      photo: null,
+    }
+    : emptyForm);
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [fileInputKey, setFileInputKey] = useState(0);
@@ -893,10 +939,15 @@ function AddPackageForm({ onAdd }) {
     setSubmitting(true);
     setMessage('');
     try {
-      await onAdd(formData);
-      setFormData(emptyForm);
+      if (editingPackage) {
+        await onUpdate(editingPackage.id, formData);
+        setMessage('Package updated.');
+      } else {
+        await onAdd(formData);
+        setMessage('Package published.');
+        setFormData(emptyForm);
+      }
       setFileInputKey((key) => key + 1);
-      setMessage('Package published.');
       setTimeout(() => setMessage(''), 3000);
     } catch (error) {
       setMessage(error.message);
@@ -907,7 +958,9 @@ function AddPackageForm({ onAdd }) {
 
   return (
     <div className="bg-slate-900 border border-white/10 rounded-2xl p-6 h-fit">
-      <h2 className="text-xl font-bold mb-6">Add package</h2>
+      <h2 className="text-xl font-bold mb-6">
+        {editingPackage ? 'Edit package' : 'Add package'}
+      </h2>
       <form onSubmit={handleSubmit} className="space-y-4">
         <input
           type="text"
@@ -971,7 +1024,7 @@ function AddPackageForm({ onAdd }) {
             className="mt-2 block w-full text-sm text-slate-300 file:mr-4 file:rounded-lg file:border-0 file:bg-cyan-500 file:px-4 file:py-2 file:font-semibold file:text-slate-950 hover:file:bg-cyan-400"
           />
           <span className="mt-1 block text-xs text-slate-500">
-            JPEG, PNG or WebP, up to 8 MB
+            {editingPackage ? 'Choose a new photo to replace the current one. Leave blank to keep it.' : 'JPEG, PNG or WebP, up to 8 MB'}
           </span>
         </label>
         <textarea
@@ -987,10 +1040,20 @@ function AddPackageForm({ onAdd }) {
           disabled={submitting}
           className="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold transition"
         >
-          {submitting ? 'Publishing...' : 'Publish package'}
+          {submitting ? (editingPackage ? 'Saving...' : 'Publishing...') : (editingPackage ? 'Save changes' : 'Publish package')}
         </button>
+        {editingPackage && (
+          <button
+            type="button"
+            onClick={onCancelEdit}
+            disabled={submitting}
+            className="w-full py-3 rounded-xl border border-white/20 hover:bg-white/10 font-semibold transition"
+          >
+            Cancel
+          </button>
+        )}
         {message && (
-          <p role="status" className={message === 'Package published.' ? 'text-emerald-300 text-sm' : 'text-red-300 text-sm'}>
+          <p role="status" className={message === 'Package published.' || message === 'Package updated.' ? 'text-emerald-300 text-sm' : 'text-red-300 text-sm'}>
             {message}
           </p>
         )}
@@ -999,7 +1062,7 @@ function AddPackageForm({ onAdd }) {
   );
 }
 
-function PackagesList({ packages, onDelete }) {
+function PackagesList({ packages, onDelete, onEdit }) {
   return (
     <div className="bg-slate-900 border border-white/10 rounded-2xl p-6">
       <h2 className="text-xl font-bold mb-6">Packages ({packages.length})</h2>
@@ -1020,15 +1083,25 @@ function PackagesList({ packages, onDelete }) {
                   {pkg.destination} · {inr(pkg.budget)} · {pkg.days} · {pkg.type}
                 </p>
               </div>
-              <button
-                onClick={() =>
-                  window.confirm(`Delete "${pkg.name}"?`) &&
-                  onDelete(pkg.id).catch((error) => window.alert(error.message))
-                }
-                className="px-4 py-2.5 rounded-lg bg-red-500/15 hover:bg-red-500/30 text-red-300 text-xs font-semibold transition"
-              >
-                Delete
-              </button>
+              <div className="flex shrink-0 gap-2">
+                <button
+                  type="button"
+                  onClick={() => onEdit(pkg)}
+                  className="px-4 py-2.5 rounded-lg bg-cyan-500/15 hover:bg-cyan-500/30 text-cyan-200 text-xs font-semibold transition"
+                >
+                  Edit
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    window.confirm(`Delete "${pkg.name}"?`) &&
+                    onDelete(pkg.id).catch((error) => window.alert(error.message))
+                  }
+                  className="px-4 py-2.5 rounded-lg bg-red-500/15 hover:bg-red-500/30 text-red-300 text-xs font-semibold transition"
+                >
+                  Delete
+                </button>
+              </div>
             </div>
           ))}
         </div>
