@@ -206,6 +206,7 @@ function CustomerView({ packages, packagesLoading, packagesError }) {
         budgetLimit={budgetLimit}
         onBudgetChange={setMaxBudget}
       />
+      <BudgetTripSuggestions onSelectPackage={handleSelect} />
       {packagesError && (
         <p role="alert" className="px-6 text-center text-red-300">
           Could not load travel packages: {packagesError}
@@ -385,6 +386,119 @@ function SearchFilters({ search, onSearchChange, maxBudget, budgetLimit, onBudge
             className="w-full h-10 accent-cyan-400 cursor-pointer"
           />
         </div>
+      </div>
+    </section>
+  );
+}
+
+function BudgetTripSuggestions({ onSelectPackage }) {
+  const [budget, setBudget] = useState('');
+  const [recommendations, setRecommendations] = useState(null);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setLoading(true);
+    setError('');
+    setRecommendations(null);
+    try {
+      const result = await apiRequest('/api/trip-suggestions', {
+        method: 'POST',
+        body: JSON.stringify({ budget: Number(budget) }),
+      });
+      setRecommendations(result.recommendations);
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <section className="px-6 pt-12">
+      <div className="max-w-6xl mx-auto rounded-3xl border border-cyan-400/20 bg-slate-900 p-6 sm:p-8">
+        <div className="max-w-2xl">
+          <p className="text-cyan-300 text-sm font-semibold uppercase tracking-wide mb-2">
+            AI trip finder
+          </p>
+          <h3 className="text-2xl sm:text-3xl font-extrabold">
+            Where can your budget take you?
+          </h3>
+          <p className="text-slate-400 mt-2 mb-6">
+            Enter your budget to see up to 3 package options that fit.
+          </p>
+          <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3">
+            <label htmlFor="trip-budget" className="sr-only">Your budget in rupees</label>
+            <input
+              id="trip-budget"
+              type="number"
+              min="1"
+              max="10000000"
+              step="1"
+              required
+              value={budget}
+              onChange={(event) => setBudget(event.target.value)}
+              placeholder="Your budget in ₹"
+              className={inputCls}
+            />
+            <button
+              type="submit"
+              disabled={loading}
+              className="shrink-0 rounded-xl bg-cyan-500 px-6 py-3 font-bold text-slate-950 transition hover:bg-cyan-400 disabled:cursor-wait disabled:opacity-60"
+            >
+              {loading ? 'Finding trips...' : 'Suggest trips'}
+            </button>
+          </form>
+          {error && <p role="alert" className="mt-4 text-sm text-red-300">{error}</p>}
+        </div>
+
+        {recommendations && recommendations.length === 0 && (
+          <p role="status" className="mt-6 text-slate-300">
+            We couldn’t find a package within that budget. Try a higher amount.
+          </p>
+        )}
+        {recommendations?.length > 0 && (
+          <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+            {recommendations.map((pkg) => (
+              <article
+                key={pkg.id}
+                className="flex gap-4 rounded-2xl border border-white/10 bg-slate-950/60 p-4"
+              >
+                <div className="h-24 w-24 shrink-0 overflow-hidden rounded-xl bg-slate-800">
+                  <SafeImage
+                    src={getPackagePhoto(pkg)}
+                    alt={pkg.destination}
+                    className="h-full w-full object-cover"
+                    fallback={
+                      <div className="flex h-full items-center justify-center text-4xl">
+                        {pkg.image || '🧳'}
+                      </div>
+                    }
+                  />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-cyan-300">
+                    {pkg.destination} · {pkg.days}
+                  </p>
+                  <h4 className="mt-1 truncate font-bold">{pkg.name}</h4>
+                  <p className="mt-1 text-sm text-slate-300">{inr(pkg.budget)}</p>
+                  <p className="mt-2 text-sm text-slate-400">{pkg.reason}</p>
+                  <button
+                    type="button"
+                    onClick={() => onSelectPackage(pkg.name)}
+                    className="mt-3 text-sm font-semibold text-cyan-300 hover:text-cyan-200"
+                  >
+                    Ask about this trip →
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+        <p className="mt-6 text-xs text-slate-500">
+          Each card is a separate package option, not a combined trip. Suggestions use listed prices and details; confirm final costs and inclusions with us.
+        </p>
       </div>
     </section>
   );
