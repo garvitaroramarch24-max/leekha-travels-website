@@ -157,7 +157,7 @@ export default function App() {
 }
 
 // ============================================================================
-// CUSTOMER VIEW
+// CUSTOMER VIEW 
 // ============================================================================
 
 function CustomerView({ packages, packagesLoading, packagesError }) {
