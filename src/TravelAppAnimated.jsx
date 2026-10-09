@@ -240,7 +240,7 @@ function Header() {
         <Link to="/" className="leading-tight flex items-center gap-3">
           <img src="/images/logo.png" alt="" className="h-10 w-10 object-contain" />
           <span className="block text-xl font-extrabold tracking-tight">
-            Leekha Travels
+            Leekha Journeys
           </span>
           <span className="block text-xs text-slate-400">
             Explore. Experience. Escape.
@@ -266,7 +266,7 @@ function HeroSection({ packages, onSelectPackage }) {
     return (
       <section className="min-h-[480px] h-[75svh] bg-gradient-to-br from-blue-900 via-slate-900 to-slate-950 flex items-end">
         <div className="max-w-7xl mx-auto w-full px-6 pb-16 sm:pb-24">
-          <p className="text-cyan-300 font-semibold mb-2">Leekha Travels</p>
+          <p className="text-cyan-300 font-semibold mb-2">Leekha Journeys</p>
           <h2 className="text-5xl sm:text-7xl font-extrabold tracking-tight mb-4">
             Find your next getaway
           </h2>
